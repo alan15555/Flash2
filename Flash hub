@@ -1,0 +1,108 @@
+local Rayfield = loadstring(game:HttpGet('https://[Log in to view URL]'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "🔦Flash hub",
+   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+   LoadingTitle = "Flash hub",
+   LoadingSubtitle = "by Alan",
+   Theme = "Default", -- Check https://[Log in to view URL]
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil, -- Create a custom folder for your hub/game
+      FileName = "firstone"
+   },
+
+   Discord = {
+      Enabled = true, -- Prompt the user to join your Discord server if their executor supports it
+      Invite = "https://[Log in to view URL]", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+   },
+
+   KeySystem = false, -- Set this to true to use our key system
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+   }
+})
+
+-- Place this script in **ServerScriptService**
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local fishingEvent = Instance.new("RemoteEvent", ReplicatedStorage)
+fishingEvent.Name = "FishingEvent"
+
+-- Speed-up factor (decreases wait time for fishing)
+local speedUpFactor = 2  -- Fishing happens 2x faster
+
+-- Function to simulate faster fishing
+local function startFishing(player)
+    local character = player.Character
+    if not character then return end
+
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local fishingSpot = workspace:FindFirstChild("FishingSpot")
+
+    if fishingSpot and (humanoidRootPart.Position - fishingSpot.Position).Magnitude < 20 then
+        -- Start casting fishing line animation (optional)
+        print(player.Name .. " is fishing faster...")
+
+        -- Simulate faster fishing time (shorter wait for bite)
+        local waitTime = math.random(2, 5) / speedUpFactor  -- Decrease wait time based on speedUpFactor
+        wait(waitTime)
+
+        -- Check if the player catches a fish (30% chance)
+        local success = math.random(1, 100) <= 30  -- 30% chance to catch a fish
+        if success then
+            fishingEvent:FireClient(player, "CaughtFish")
+        else
+            fishingEvent:FireClient(player, "NoCatch")
+        end
+    else
+        fishingEvent:FireClient(player, "InvalidLocation")
+    end
+end
+
+-- Teleport to different island function
+local function teleportToIsland(player, islandName)
+    local island = workspace:FindFirstChild(islandName)
+    if island then
+        local spawnPosition = island:WaitForChild("SpawnPoint")
+        player.Character:SetPrimaryPartCFrame(spawnPosition.CFrame)
+        print(player.Name .. " teleported to " .. islandName)
+    else
+        print("Island not found!")
+    end
+end
+
+-- Auto-use totem function
+local function autoUseTotem(player)
+    local totem = player.Backpack:FindFirstChild("Totem")
+    if totem then
+        -- Trigger the totem’s effect (example: increase health)
+        print(player.Name .. " used the totem!")
+        player.Character.Humanoid.Health = player.Character.Humanoid.Health + 50
+        totem:Destroy()  -- Optionally destroy the totem after use
+    else
+        print("No totem found in inventory.")
+    end
+end
+
+-- Listen for actions from clients
+fishingEvent.OnServerEvent:Connect(function(player, action, islandName)
+    if action == "StartFishing" then
+        startFishing(player)
+    elseif action == "Teleport" then
+        teleportToIsland(player, islandName)
+    elseif action == "UseTotem" then
+        autoUseTotem(player)
+    end
+end)
